@@ -1,1 +1,0 @@
-[2025-06-17 21:15:28] ERROR: Failed to connect to the API. Please check your internet connection.
