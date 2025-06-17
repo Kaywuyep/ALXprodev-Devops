@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# Pokémon API script to fetch Pikachu data
+# Description: Fetches Pikachu data from PokeAPI and saves to data.json or logs errors
+
+# Configuration
+POKEMON_NAME="pikachu"
+API_URL="https://pokeapi.co/api/v2/pokemon/"
+OUTPUT_FILE="data.json"
+ERROR_FILE="errors.txt"
+
+# Function to log errors with timestamp
+log_error() {
+    local error_message="$1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $error_message" >> "$ERROR_FILE"
+}
+
+# Function to make API request
+fetch_pokemon_data() {
+    echo "Fetching data for Pokémon: $POKEMON_NAME"
+    
+    # Make the API request using curl
+    # -s: silent mode (no progress bar)
+    # -w: write HTTP status code to variable
+    # -o: output response body to file
+    HTTP_STATUS=$(curl -s -w "%{http_code}" -o temp_response.json "$API_URL")
+    
+    # Check if curl command succeeded
+    if [ $? -ne 0 ]; then
+        log_error "Failed to connect to the API. Please check your internet connection."
+        rm -f temp_response.json
+        return 1
+    fi
+    
+    # Check HTTP status code
+    case $HTTP_STATUS in
+        200)
+            echo "✓ Successfully retrieved data for $POKEMON_NAME"
+            mv temp_response.json "$OUTPUT_FILE"
+            echo "✓ Data saved to $OUTPUT_FILE"
+            
+            # Display some basic info from the response
+            if command -v jq >/dev/null 2>&1; then
+                echo "📊 Basic Info:"
+                echo "   Name: $(jq -r '.name' "$OUTPUT_FILE")"
+                echo "   ID: $(jq -r '.id' "$OUTPUT_FILE")"
+                echo "   Height: $(jq -r '.height' "$OUTPUT_FILE") decimeters"
+                echo "   Weight: $(jq -r '.weight' "$OUTPUT_FILE") hectograms"
+                echo "   Base Experience: $(jq -r '.base_experience' "$OUTPUT_FILE")"
+            else
+                echo "ℹ️  Install 'jq' to see formatted Pokemon info"
+            fi
+            return 0
+            ;;
+        404)
+            log_error "Pokémon '$POKEMON_NAME' not found (HTTP 404)"
+            rm -f temp_response.json
+            return 1
+            ;;
+        *)
+            log_error "API request failed with HTTP status code: $HTTP_STATUS"
+            rm -f temp_response.json
+            return 1
+            ;;
+    esac
+}
+
+# Function to validate prerequisites
+check_prerequisites() {
+    if ! command -v curl >/dev/null 2>&1; then
+        log_error "curl is not installed. Please install curl to use this script."
+        echo "Error: curl is required but not installed."
+        return 1
+    fi
+    return 0
+}
+
+# Main execution
+main() {
+    echo "🔥 Pokémon API Data Fetcher"
+    echo "=========================="
+    
+    # Check prerequisites
+    if ! check_prerequisites; then
+        exit 1
+    fi
+    
+    # Create or clear the output file
+    > "$OUTPUT_FILE"
+    
+    # Fetch the data
+    if fetch_pokemon_data; then
+        echo "✅ Script completed successfully!"
+        echo "📁 Check '$OUTPUT_FILE' for the Pokémon data"
+    else
+        echo "❌ Script failed to fetch data"
+        echo "📁 Check '$ERROR_FILE' for error details"
+        exit 1
+    fi
+}
+
+# Cleanup function for interrupted execution
+cleanup() {
+    echo -e "\n🧹 Cleaning up temporary files..."
+    rm -f temp_response.json
+    exit 130
+}
+
+# Set up signal handlers
+trap cleanup INT TERM
+
+# Run the main function
+main "$@"
