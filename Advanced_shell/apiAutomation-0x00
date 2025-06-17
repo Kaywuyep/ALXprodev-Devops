@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Pokémon API script to fetch Pikachu data
-# Author: Claude
 # Description: Fetches Pikachu data from PokeAPI and saves to data.json or logs errors
 
 # Configuration
