@@ -1,26 +1,28 @@
 #!/bin/bash
 
-# Parse Pikachu data from JSON
+# Parse Pikachu data from JSON using jq, awk, and sed
 INPUT_FILE="data.json"
 
 # Check if file exists
 [ ! -f "$INPUT_FILE" ] && { echo "Error: $INPUT_FILE not found"; exit 1; }
 
-# Extract name - look for "name":"pikachu" pattern
-NAME=$(grep -o '"name":"pikachu"' "$INPUT_FILE" | head -1 | cut -d'"' -f4)
-NAME=$(echo "$NAME" | sed 's/^./\U&/')
+# Check if jq is available
+if ! command -v jq &> /dev/null; then
+    echo "Error: jq is required but not installed"
+    exit 1
+fi
 
-# Extract height - look for "height":number pattern
-HEIGHT_DM=$(grep -o '"height":[0-9]*' "$INPUT_FILE" | cut -d':' -f2)
-HEIGHT_M=$(echo "$HEIGHT_DM" | awk '{printf "%.1f", $1/10}')
+# Use jq to extract the data, then format with awk and sed
+name=$(jq -r '.name' "$INPUT_FILE" | sed 's/^./\U&/')
 
-# Extract weight - look for "weight":number pattern  
-WEIGHT_HG=$(grep -o '"weight":[0-9]*' "$INPUT_FILE" | cut -d':' -f2)
-WEIGHT_KG=$(echo "$WEIGHT_HG" | awk '{printf "%.0f", $1/10}')
+# Extract height (convert decimeters to meters)
+formatted_height=$(jq -r '.height' "$INPUT_FILE" | awk '{printf "%.1f", $1/10}')
 
-# Extract first type - look for first type name in types array
-TYPE=$(sed 's/.*"types":\[.*"name":"\([^"]*\)".*/\1/' "$INPUT_FILE")
-TYPE=$(echo "$TYPE" | sed 's/^./\U&/')
+# Extract weight (convert hectograms to kilograms) 
+formatted_weight=$(jq -r '.weight' "$INPUT_FILE" | awk '{printf "%.0f", $1/10}')
 
-# Output the result
-echo "$NAME is of type $TYPE, weighs ${WEIGHT_KG}kg, and is ${HEIGHT_M}m tall."
+# Extract first type and capitalize
+type=$(jq -r '.types[0].type.name' "$INPUT_FILE" | sed 's/^./\U&/')
+
+# Output the result (removed the extra quote)
+echo "$name is of type $type, weighs ${formatted_weight}kg, and is ${formatted_height}m tall."
