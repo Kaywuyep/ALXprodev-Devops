@@ -41,12 +41,26 @@ fetch_pokemon() {
     fi
 }
 
-# Main execution — run each fetch in parallel
+# Launch background jobs and store their PIDs
+pids=()
+
 for pokemon in "${pokemon_list[@]}"; do
     fetch_pokemon "$pokemon" &
+    pids+=($!)
 done
 
-# Wait for all background processes to complete
-wait
+# Show background jobs
+echo "🔍 Currently running jobs:"
+jobs
 
-echo "✅ All Pokémon data fetched."
+# Wait for all background jobs to complete
+for pid in "${pids[@]}"; do
+    wait "$pid" || echo "⚠️ Process $pid exited with error"
+done
+
+# Kill any remaining background processes (cleanup if necessary)
+for job in $(jobs -p); do
+    kill "$job" 2>/dev/null
+done
+
+echo "✅ All background fetches completed."
