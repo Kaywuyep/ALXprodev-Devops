@@ -1,22 +1,22 @@
 #!/bin/bash
 
-# List of Pokemon to fetch
+# List of Pokémon to fetch
 pokemon_list=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 
-# Directory to store Pokemon data
+# Directory to store Pokémon data
 data_dir="pokemon_data"
 
 # Create directory if it doesn't exist
 mkdir -p "$data_dir"
 
-# Function to fetch and save Pokemon data
+# Function to fetch and save Pokémon data
 fetch_pokemon() {
     local pokemon_name="$1"
     local url="https://pokeapi.co/api/v2/pokemon/${pokemon_name}"
     local output_file="${data_dir}/${pokemon_name}.json"
-    
+
     echo "Fetching data for ${pokemon_name}..."
-    
+
     # Fetch data using curl
     if curl -s "$url" | jq '.' > "$output_file" 2>/dev/null; then
         echo "Saved data to ${output_file} ✅"
@@ -30,9 +30,5 @@ fetch_pokemon() {
 # Main execution
 for pokemon in "${pokemon_list[@]}"; do
     fetch_pokemon "$pokemon"
-    
-    # Add delay to prevent rate limiting (except for last pokemon)
-    if [ "$pokemon" != "${pokemon_list[-1]}" ]; then
-        sleep 1
-    fi
+    sleep 1  # Delay between requests to prevent rate-limiting
 done
