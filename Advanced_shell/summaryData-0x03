@@ -21,6 +21,9 @@ for json_file in pokemon_data/*.json; do
     fi
 done
 
+# Fix the CSV header with sed (e.g., remove parentheses for simplicity)
+sed -i '1s/(.*)//g' "$output_file"
+
 # Output file location
 echo "CSV Report generated at: $output_file"
 echo ""
